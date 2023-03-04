@@ -8,7 +8,7 @@
     <link rel="shortcut icon" href="{{ asset('cloud.ico') }}" type="image/x-icon">
     <link rel="stylesheet" href="{{ asset('css/bootstrap.min.css') }}">
 
-    <link rel="stylesheet" href="{{ asset('css/dropzone.min.css') }}">
+    {{-- <link rel="stylesheet" href="{{ asset('css/dropzone.min.css') }}"> --}}
 
     <style>
         /* textarea:focus,
@@ -50,7 +50,7 @@
             </div>
         @endif
         @if (Session::has('errordup'))
-            <div class="alert alert-danger my-4" role="alert">
+            <div class="alert alert-warning my-4" role="alert">
                 {{ Session::get('errordup') }}
             </div>
         @endif
@@ -102,24 +102,25 @@
                         </div>
                     </div>
                 </fieldset>
-                {{-- <div class="row mb-3">
-                    <div class="col-sm-10 offset-sm-2">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="gridCheck1">
-                            <label class="form-check-label" for="gridCheck1">
-                                Example checkbox
-                            </label>
-                        </div>
-                    </div>
-                </div> --}}
                 <div class="row mb-3">
                     <div class="col-sm-10 offset-sm-2">
-                        <select class="form-select" name="period" aria-label="Default select example">
+                        <select class="form-select" name="period" id="period" aria-label="Default select example">
                             <option selected disabled>Minggu/Tugas ke-</option>
                             @for ($i = 1; $i <= 18; $i++)
                                 <option value="{{ $i }}">{{ $i }}</option>
                             @endfor
                         </select>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-sm-10 offset-sm-2">
+                        <div class="form-check">
+                            <input class="form-check-input" name="closed" value="0" type="checkbox"
+                                id="isClosed">
+                            <label class="form-check-label" for="isClosed">
+                                Closed
+                            </label>
+                        </div>
                     </div>
                 </div>
                 <div class="row mb-3">
@@ -136,7 +137,45 @@
 
 
     <script src="{{ asset('js/bootstrap.min.js') }}"></script>
-    <script src="{{ asset('js/dropzone.min.js') }}"></script>
+    {{-- <script src="{{ asset('js/dropzone.min.js') }}"></script> --}}
+    <script src="{{ asset('js/axios.min.js') }}"></script>
+
+    <script>
+        const isClosed = document.getElementById('isClosed');
+        const period = document.getElementById('period');
+        const type = document.getElementsByName('type');
+
+        function fetchClose() {
+            if (!isNaN(period.value)) {
+                // console.log(period.value);
+                // console.log(type[0].checked ? type[0].value : type[1].value);
+
+                axios.get('/fetch-close', {
+                    params: {
+                        period: period.value,
+                        type: type[0].checked ? type[0].value : type[1].value
+                    }
+                }).then((res) => {
+                    if (res.data) {
+                        if (res.data.is_closed === 1) {
+                            isClosed.checked = true;
+                        } else {
+                            isClosed.checked = false;
+                        }
+                    } else {
+                        isClosed.checked = false;
+                    }
+                }).catch((err) => {
+                    console.log(err);
+                });
+            }
+        }
+
+
+        period.addEventListener('change', fetchClose);
+        type[0].addEventListener('change', fetchClose);
+        type[1].addEventListener('change', fetchClose);
+    </script>
 </body>
 
 </html>

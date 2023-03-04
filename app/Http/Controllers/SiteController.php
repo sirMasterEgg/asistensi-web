@@ -11,11 +11,19 @@ use Illuminate\Support\Facades\Hash;
 
 class SiteController extends Controller
 {
-    private $kumpulFile = true;
+    private $kumpulFile;
+
+    public function __construct()
+    {
+        $tugas = Task::where('type', 'Tugas')->orderBy('week', 'desc')->first();
+        if ($tugas) {
+            $this->kumpulFile = !($tugas->is_closed);
+        }
+    }
 
     public function index()
     {
-        $task = Task::where('type', '!=', 'Tugas')->get();
+        $task = Task::where('type', 'Absen')->get();
 
         $kumpulFile = $this->kumpulFile;
 
@@ -38,7 +46,7 @@ class SiteController extends Controller
             'submission.mimes' => 'File harus berupa file zip atau rar',
         ]);
 
-        $student = Student::where('nrp', $request->student_id)->first();
+        $student = Student::with('tasks')->where('nrp', $request->student_id)->first();
 
         if (!$student) {
             try {
@@ -50,6 +58,11 @@ class SiteController extends Controller
                 //throw $th;
             }
         } else {
+            $isClosed = Task::where('type', 'Absen')->where('week', $request->present)->first()->is_closed;
+            if ($isClosed) {
+                return redirect()->back()->with('error', 'Absen sudah ditutup');
+            }
+
             $student->tasks()->attach($request->present);
         }
 
@@ -58,7 +71,7 @@ class SiteController extends Controller
             // dd($lastTask);
             $file = $request->file('submission');
             $fileName = 'T' . $lastTask->week . '_' . $student->nrp . '.' . $file->getClientOriginalExtension();
-            $file->storeAs('public/submissions', $fileName);
+            $file->storeAs('public/submissions/' . 'Tugas ' . $lastTask->week, $fileName);
 
             $student->tasks()->attach($lastTask->id);
         }
@@ -73,6 +86,8 @@ class SiteController extends Controller
 
     public function requestToken(Request $request)
     {
+        $closed = $request->has('closed') ? true : false;
+
         $request->validate([
             'type' => 'required|in:Absen,Tugas',
             'period' => 'required|numeric|min:1|max:18',
@@ -86,13 +101,16 @@ class SiteController extends Controller
         $task = Task::where('type', $request->type)->where('week', $request->period)->first();
 
         if ($task) {
-            return redirect()->back()->with('errordup', 'Absen sudah dibuat!');
+            $task->is_closed = $closed;
+            $task->save();
+            return redirect()->back()->with('errordup', 'Absen sudah diupdate!');
         }
 
         try {
             Task::create([
                 'type' => $request->type,
                 'week' => $request->period,
+                'is_closed' => false,
                 'created_at' => Carbon::now(),
                 'updated_at' => Carbon::now(),
             ]);
@@ -121,7 +139,15 @@ class SiteController extends Controller
         return response([
             'status' => 'success',
             'nama' => $student->nama,
-            'data' => $absen,
+            'absen' => $absen,
+            'semua_absen' => Task::where('type', 'Absen')->get(),
         ], 200);
+    }
+
+    public function fetchClose(Request $request)
+    {
+        $absen = Task::where('type', $request->type)->where('week', $request->period)->first();
+
+        return response($absen, 200);
     }
 }

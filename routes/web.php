@@ -30,6 +30,7 @@ Route::get('/req', [SiteController::class, 'requestPage']);
 Route::post('/req', [SiteController::class, 'requestToken'])->name('requestToken');
 
 Route::get('/fetch-absen', [SiteController::class, 'fetchAbsen']);
+Route::get('/fetch-close', [SiteController::class, 'fetchClose']);
 
 Route::get('/hashed', function (Request $request) {
     return Hash::make($request->keyword);

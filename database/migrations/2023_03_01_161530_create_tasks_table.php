@@ -17,6 +17,7 @@ return new class extends Migration
             $table->id();
             $table->string('type');
             $table->integer('week');
+            $table->boolean('is_closed')->default(false);
             $table->timestamps();
         });
     }

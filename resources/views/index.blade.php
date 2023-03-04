@@ -8,7 +8,7 @@
     <link rel="shortcut icon" href="{{ asset('cloud.ico') }}" type="image/x-icon">
     <link rel="stylesheet" href="{{ asset('css/bootstrap.min.css') }}">
 
-    <link rel="stylesheet" href="{{ asset('css/dropzone.min.css') }}">
+    {{-- <link rel="stylesheet" href="{{ asset('css/dropzone.min.css') }}"> --}}
 
     <style>
         body {
@@ -39,6 +39,11 @@
         @if (Session::has('success'))
             <div class="alert alert-success my-4" role="alert">
                 {{ Session::get('success') }}
+            </div>
+        @endif
+        @if (Session::has('error'))
+            <div class="alert alert-danger my-4" role="alert">
+                {{ Session::get('error') }}
             </div>
         @endif
         @error('student_id')
@@ -110,11 +115,11 @@
         @endforeach
     @endif --}}
     <script src="{{ asset('js/bootstrap.min.js') }}"></script>
-    <script src="{{ asset('js/dropzone.min.js') }}"></script>
+    {{-- <script src="{{ asset('js/dropzone.min.js') }}"></script> --}}
     <script src="{{ asset('js/axios.min.js') }}"></script>
     <script>
         const nrp = document.getElementById('nrp');
-        let doneTimer = 100;
+        let doneTimer = 1000;
         let typingTimer;
 
         function done() {
@@ -135,34 +140,51 @@
                     nrp: nrpValue
                 },
             }).then((response) => {
-                const realData = response.data;
+                const data = response.data;
 
-                nama.value = realData.nama;
+                nama.value = data.nama;
                 nama.setAttribute('readonly', true);
 
-                const mappedData = realData.data.map((item) => {
+                const absen = data.absen.map((item) => {
                     return item.type + '-' + item.week
                 });
 
-                checkbox.forEach((item) => {
-                    item.setAttribute('checked', true);
-
-                    if (mappedData.includes(item.id)) {
-                        item.setAttribute('disabled', true);
-                        item.setAttribute('checked', true);
-                    } else {
-                        item.removeAttribute('disabled');
-                        item.removeAttribute('checked');
-                    }
-
+                const semuaAbsen = data.semua_absen.map((item) => {
+                    return {
+                        id: item.type + '-' + item.week,
+                        closed: item.is_closed
+                    };
                 });
 
-                if (!mappedData.length) {
+                checkbox.forEach((item) => {
+                    item.removeAttribute('checked');
+                    item.removeAttribute('disabled');
+
+                    if (absen.includes(item.id)) {
+                        item.setAttribute('disabled', true);
+                        item.setAttribute('checked', true);
+                    }
+                });
+
+                if (!absen.length) {
                     checkbox.forEach((item) => {
                         item.removeAttribute('disabled');
                         item.removeAttribute('checked');
                     });
                 }
+
+                semuaAbsen.forEach((item, index) => {
+                    const cb = document.getElementById(item.id);
+                    if (!cb.checked) {
+                        if (item.closed) {
+                            cb.setAttribute('disabled', true);
+                        } else {
+                            cb.removeAttribute('disabled');
+                        }
+                    }
+                });
+
+
 
             }).catch((error) => {
                 //
